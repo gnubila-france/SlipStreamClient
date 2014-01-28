@@ -20,6 +20,9 @@
 import sys
 import os
 import tarfile
+import httplib
+import socket
+import ssl
 import urllib2
 import shutil
 import subprocess
@@ -33,6 +36,17 @@ INSTALL_CMD = None
 DISTRO = None
 PIP_INSTALLED = False
 
+
+def _connect(self):
+    "Connect to a host on a given (SSL) port."
+    sock = socket.create_connection((self.host, self.port),
+                                        self.timeout, self.source_address)
+    if self._tunnel_host:
+        self.sock = sock
+        self._tunnel()
+    self.sock = ssl.wrap_socket(sock, self.key_file,
+                                self.cert_file,
+                                ssl_version=ssl.PROTOCOL_SSLv3)
 
 def _setPythonpathSlipStream():
     ss_lib = os.path.join(SLIPSTREAM_CLIENT_HOME, 'lib')
@@ -338,6 +352,8 @@ def main():
 
         msg = "=== %s bootstrap script ===" % os.path.basename(targetScript)
         print '{sep}\n{msg}\n{sep}'.format(sep=len(msg) * '=', msg=msg)
+
+        httplib.HTTPSConnection.connect = _connect
 
         setupSlipStreamAndCloudConnector(is_orchestration)
 
